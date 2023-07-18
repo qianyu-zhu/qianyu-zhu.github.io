@@ -3,7 +3,7 @@ layout: page
 permalink: /misc/
 title: Misc
 description: A bit more about me and my friends.
-nav: true
+nav: false
 nav_order: 4
 ---
 
