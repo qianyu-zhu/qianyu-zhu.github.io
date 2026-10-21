@@ -590,15 +590,33 @@ footer.sticky-bottom {
         max-width: 200px;
       }
 
+      .publication-entry {
+        display: grid;
+        grid-template-columns: 9rem minmax(0, 1fr);
+        column-gap: 1.25rem;
+        margin-left: 0;
+        margin-right: 0;
+
+        @media (max-width: 575.98px) {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .publication-content {
+        min-width: 0;
+      }
+
       .abbr {
-        height: 2rem;
+        height: auto;
         margin-bottom: 0.5rem;
 
         abbr {
           display: inline-block;
           background-color: var(--global-theme-color);
-          padding-left: 1rem;
-          padding-right: 1rem;
+          max-width: 100%;
+          padding: 0.3rem 0.5rem;
+          white-space: normal;
+          line-height: 1.2;
 
           a {
             color: white;
@@ -634,7 +652,19 @@ footer.sticky-bottom {
           font-style: normal;
         }
 
-        >span.more-authors {
+        >button.more-authors {
+          display: inline;
+          margin: 0;
+          padding: 0;
+          background: transparent;
+          border: 0;
+          border-radius: 0;
+          font: inherit;
+          font-size: 0.85em;
+          line-height: inherit;
+          text-transform: none;
+          vertical-align: baseline;
+          white-space: nowrap;
           color: var(--global-text-color-light);
           border-bottom: 1px dashed var(--global-text-color-light);
           cursor: pointer;
