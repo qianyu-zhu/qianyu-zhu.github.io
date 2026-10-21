@@ -34,19 +34,27 @@
         <!-- Author -->
         <div class="author">
         {% assign author_array_size = entry.author_array | size %}
-
         {% assign author_array_limit = author_array_size %}
         {%- if site.max_author_limit and author_array_size > site.max_author_limit %}
           {% assign author_array_limit = site.max_author_limit %}
         {% endif %}
+        {%- assign equal_contributors = entry.equal_contributors | split: ',' -%}
+        {%- assign secondary_equal_contributors = entry.secondary_equal_contributors | split: ',' -%}
+        {%- assign hidden_author_count = 0 -%}
+        {%- assign previous_author_hidden = false -%}
 
-        {%- for author in entry.author_array limit: author_array_limit -%}
+        {%- for author in entry.author_array -%}
           {%- assign author_is_self = false -%}
           {%- assign author_last_name = author.last | remove: "¶" | remove: "&" | remove: "*" | remove: "†" | remove: "^" -%}
           {%- if site.scholar.last_name contains author_last_name -%}
             {%- if site.scholar.first_name contains author.first -%}
               {%- assign author_is_self = true -%}
             {%- endif -%}
+          {%- endif -%}
+          {%- assign author_hidden = false -%}
+          {%- if forloop.index0 >= author_array_limit and author_is_self == false -%}
+            {%- assign author_hidden = true -%}
+            {%- assign hidden_author_count = hidden_author_count | plus: 1 -%}
           {%- endif -%}
           {%- assign coauthor_url = nil -%}
           {%- if site.data.coauthors[author_last_name] -%}
@@ -57,55 +65,55 @@
               {%- endif -%}
             {%- endfor -%}
           {%- endif -%}
-
-          {%- if forloop.length > 1 -%}
-            {%- if forloop.first == false -%},&nbsp;{%- endif -%}
-            {%- if forloop.last and author_array_limit == author_array_size -%}and&nbsp;{%- endif -%}
-          {%- endif -%}
-          {%- if author_is_self -%}
-            <em>{{author.first}} {{author.last}}</em>
-          {%- else -%}
-            {%- if coauthor_url -%}
+          {%- assign author_index = forloop.index | append: '' -%}
+          {%- capture author_markup -%}
+            {%- unless forloop.first -%},&nbsp;{%- endunless -%}
+            {%- if forloop.last and author_array_size > 1 -%}and&nbsp;{%- endif -%}
+            {%- if author_is_self -%}
+              <strong>{{author.first}} {{author.last}}</strong>
+            {%- elsif coauthor_url -%}
               <a href="{{coauthor_url}}">{{author.first}} {{author.last}}</a>
             {%- else -%}
               {{author.first}} {{author.last}}
             {%- endif -%}
+            {%- if equal_contributors contains author_index -%}
+              <sup title="Equal contribution">*</sup>
+            {%- endif -%}
+            {%- if secondary_equal_contributors contains author_index -%}
+              <sup title="{{ entry.secondary_equal_contribution_note | escape }}">†</sup>
+            {%- endif -%}
+          {%- endcapture -%}
+          {%- if author_hidden -%}
+            {%- unless previous_author_hidden -%}<span class="author-ellipsis">, …</span>{%- endunless -%}
+            <span class="author-hidden" hidden>{{ author_markup }}</span>
+          {%- else -%}
+            {{ author_markup }}
           {%- endif -%}
+          {%- assign previous_author_hidden = author_hidden -%}
         {%- endfor -%}
-        {%- assign more_authors = author_array_size | minus: author_array_limit -%}
 
-        {%- assign more_authors_hide = more_authors | append: " more author" -%}
-        {%- if more_authors > 0 -%}
-          {%- if more_authors > 1 -%}
-            {%- assign more_authors_hide = more_authors_hide | append: "s" -%}
-          {%- endif -%}
-          {%- assign more_authors_show = '' -%}
-          {%- for author in entry.author_array offset: author_array_limit -%}
-            {%- assign more_authors_show = more_authors_show | append: author.first | append: " " | append: author.last -%}
-            {%- unless forloop.last -%}
-              {%- assign more_authors_show = more_authors_show | append: ", " -%}
-            {%- endunless -%}
-          {%- endfor -%}
-          , and
-          <span
-              class="more-authors"
-              title="click to view {{more_authors_hide}}"
+        {%- if hidden_author_count > 0 -%}
+          {%- capture more_authors_label -%}{{ hidden_author_count }} more author{% if hidden_author_count > 1 %}s{% endif %}{%- endcapture -%}
+          &nbsp;<button type="button" class="more-authors btn btn-sm z-depth-0"
+              aria-expanded="false"
               onclick="
                 var element = $(this);
-                element.attr('title', '');
-                var more_authors_text = element.text() == '{{more_authors_hide}}' ? '{{more_authors_show}}' : '{{more_authors_hide}}';
-                var cursorPosition = 0;
-                var textAdder = setInterval(function(){
-                  element.text(more_authors_text.substring(0, cursorPosition + 1));
-                  if (++cursorPosition == more_authors_text.length){
-                    clearInterval(textAdder);
-                  }
-              }, '{{site.more_authors_animation_delay}}');
+                var authors = element.closest('.author');
+                var expanded = element.attr('aria-expanded') === 'true';
+                authors.find('.author-hidden').prop('hidden', expanded);
+                authors.find('.author-ellipsis').prop('hidden', !expanded);
+                element.attr('aria-expanded', String(!expanded));
+                element.text(expanded ? '{{ more_authors_label }}' : 'Show fewer authors');
               "
-          >{{more_authors_hide}}</span>
+          >{{ more_authors_label }}</button>
         {%- endif -%}
-
         </div>
+        {% if entry.equal_contributors %}
+        <div class="periodical"><small><sup>*</sup> {{ entry.equal_contribution_note | default: 'Equal contribution.' }}</small></div>
+        {% endif %}
+        {% if entry.secondary_equal_contributors %}
+        <div class="periodical"><small><sup>†</sup> {{ entry.secondary_equal_contribution_note }}</small></div>
+        {% endif %}
 
         <!-- Journal/Book title and date -->
         {% assign proceedings = "inproceedings,incollection" | split: ','%}
